@@ -1,0 +1,8 @@
+{
+  "name": "TPQ Finance Manager",
+  "description": "Aplikasi manajemen keuangan TPQ cerdas dengan fitur input AI dan dashboard real-time.",
+  "requestFramePermissions": [
+    "camera",
+    "microphone"
+  ]
+}
