@@ -58,6 +58,24 @@ const CATEGORIES = {
 
 export default function App() {
   const [transactions, setTransactions] = useState<Transaction[]>([]);
+
+  // Load transactions from localStorage on mount
+  useEffect(() => {
+    const saved = localStorage.getItem('tpq_transactions');
+    if (saved) {
+      try {
+        setTransactions(JSON.parse(saved));
+      } catch (e) {
+        console.error("Failed to parse saved transactions", e);
+      }
+    }
+  }, []);
+
+  // Save transactions to localStorage when they change
+  useEffect(() => {
+    localStorage.setItem('tpq_transactions', JSON.stringify(transactions));
+  }, [transactions]);
+
   const [activeTab, setActiveTab] = useState<'dashboard' | 'input' | 'history' | 'ai'>('dashboard');
   const [isAiLoading, setIsAiLoading] = useState(false);
   const [aiInput, setAiInput] = useState('');
