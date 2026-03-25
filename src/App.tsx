@@ -142,7 +142,7 @@ export default function App() {
 
     try {
       // Use the standard Gemini API key provided by the platform
-      const apiKey = process.env.GEMINI_API_KEY;
+      const apiKey = import.meta.env.VITE_GEMINI_API_KEY;
       
       if (!apiKey) {
         throw new Error("API Key tidak ditemukan. Pastikan Anda menjalankan aplikasi di lingkungan AI Studio.");
