@@ -123,15 +123,22 @@ export default function App() {
     setAiResponse(null);
 
     try {
-      const ai = new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY });
+      // Use the standard Gemini API key provided by the platform
+      const apiKey = process.env.GEMINI_API_KEY;
+      
+      if (!apiKey) {
+        throw new Error("API Key tidak ditemukan. Pastikan Anda menjalankan aplikasi di lingkungan AI Studio.");
+      }
+
+      const ai = new GoogleGenAI({ apiKey });
       const response = await ai.models.generateContent({
         model: "gemini-3-flash-preview",
-        contents: `Ekstrak data transaksi keuangan TPQ dari teks berikut: "${aiInput}". 
+        contents: [{ parts: [{ text: `Ekstrak data transaksi keuangan TPQ dari teks berikut: "${aiInput}". 
         Berikan respons dalam format JSON murni dengan struktur: 
         { "type": "income" | "expense", "amount": number, "category": string, "description": string }.
         Gunakan kategori yang relevan dari daftar ini: 
         Income: ${CATEGORIES.income.join(', ')}
-        Expense: ${CATEGORIES.expense.join(', ')}`,
+        Expense: ${CATEGORIES.expense.join(', ')}` }] }],
         config: {
           responseMimeType: "application/json",
           responseSchema: {
@@ -147,7 +154,11 @@ export default function App() {
         }
       });
 
-      const result = JSON.parse(response.text);
+      const text = response.text;
+      if (!text) throw new Error("AI tidak memberikan respons.");
+      
+      const result = JSON.parse(text);
+      
       setFormData({
         ...formData,
         type: result.type,
@@ -155,11 +166,17 @@ export default function App() {
         category: result.category,
         description: result.description
       });
-      setAiResponse(`Berhasil mengekstrak: ${result.type === 'income' ? 'Pemasukan' : 'Pengeluaran'} sebesar Rp ${result.amount.toLocaleString()} untuk ${result.description}. Silakan periksa form input.`);
-      setActiveTab('input');
-    } catch (error) {
-      console.error(error);
-      setAiResponse("Maaf, saya gagal memahami input tersebut. Coba gunakan bahasa yang lebih jelas.");
+      
+      setAiResponse(`Berhasil mengekstrak: ${result.type === 'income' ? 'Pemasukan' : 'Pengeluaran'} sebesar Rp ${result.amount.toLocaleString()} untuk "${result.description}". Data telah dimasukkan ke form.`);
+      
+      // Small delay before switching tab to let user read the message
+      setTimeout(() => {
+        setActiveTab('input');
+      }, 1500);
+
+    } catch (error: any) {
+      console.error("AI Input Error:", error);
+      setAiResponse(`Kesalahan: ${error.message || "Gagal memproses input."}`);
     } finally {
       setIsAiLoading(false);
       setAiInput('');
