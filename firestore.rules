@@ -1,0 +1,73 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    // Default deny
+    match /{document=**} {
+      allow read, write: if false;
+    }
+
+    // Helpers
+    function isSignedIn() { return request.auth != null; }
+    function isOwner(userId) { return isSignedIn() && request.auth.uid == userId; }
+    function isValidId(id) { return id is string && id.size() <= 128 && id.matches('^[a-zA-Z0-9_\\-]+$'); }
+    function incoming() { return request.resource.data; }
+    function existing() { return resource.data; }
+
+    function isValidBook(data) {
+      return data.keys().hasAll(['name', 'userId', 'createdAt']) &&
+             data.keys().size() == 3 &&
+             data.name is string && data.name.size() >= 1 && data.name.size() <= 100 &&
+             data.userId == request.auth.uid &&
+             data.createdAt is timestamp;
+    }
+
+    function isBookOwner(bookId) {
+      return isSignedIn() && get(/databases/$(database)/documents/books/$(bookId)).data.userId == request.auth.uid;
+    }
+
+    function isValidTransaction(data) {
+      return data.keys().size() == 9 &&
+             data.keys().hasAll(['bookId', 'type', 'amount', 'category', 'description', 'date', 'time', 'userId', 'createdAt']) &&
+             data.bookId is string &&
+             data.type in ['income', 'expense'] &&
+             data.amount is number && data.amount > 0 &&
+             data.category is string && data.category.size() <= 100 &&
+             data.description is string && data.description.size() <= 500 &&
+             data.date is string && data.date.matches('^\\d{4}-\\d{2}-\\d{2}$') &&
+             data.time is string && data.time.matches('^\\d{2}:\\d{2}$') &&
+             data.userId == request.auth.uid &&
+             data.createdAt is timestamp;
+    }
+
+    match /books/{bookId} {
+      allow list: if isSignedIn() && resource.data.userId == request.auth.uid;
+      allow get: if isSignedIn() && resource.data.userId == request.auth.uid;
+      allow create: if isSignedIn() && isValidId(bookId) && isValidBook(incoming()) && incoming().createdAt == request.time;
+      allow update: if isSignedIn() && isOwner(existing().userId) && isValidBook(incoming()) && 
+                      incoming().diff(existing()).affectedKeys().hasOnly(['name']);
+      allow delete: if isSignedIn() && isOwner(existing().userId);
+    }
+
+    match /transactions/{transactionId} {
+      allow list: if isSignedIn() && resource.data.userId == request.auth.uid;
+      allow get: if isSignedIn() && resource.data.userId == request.auth.uid;
+      
+      allow create: if isSignedIn() && 
+                      isValidId(transactionId) && 
+                      isValidTransaction(incoming()) &&
+                      isBookOwner(incoming().bookId) &&
+                      incoming().createdAt == request.time;
+      
+      allow update: if isSignedIn() &&
+                      isOwner(existing().userId) &&
+                      isValidTransaction(incoming()) &&
+                      incoming().userId == existing().userId &&
+                      incoming().bookId == existing().bookId &&
+                      incoming().createdAt == existing().createdAt &&
+                      // Explicitly define what can be updated
+                      incoming().diff(existing()).affectedKeys().hasOnly(['type', 'amount', 'category', 'description', 'date', 'time']);
+      
+      allow delete: if isSignedIn() && isOwner(existing().userId);
+    }
+  }
+}

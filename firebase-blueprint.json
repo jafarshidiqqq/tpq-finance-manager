@@ -1,0 +1,81 @@
+{
+  "entities": {
+    "Book": {
+      "title": "Book",
+      "description": "A financial ledger for a specific purpose",
+      "type": "object",
+      "properties": {
+        "name": {
+          "type": "string",
+          "description": "Name of the book (e.g., Personal, TPQ)"
+        },
+        "userId": {
+          "type": "string",
+          "description": "Owner of the book"
+        },
+        "createdAt": {
+          "type": "string",
+          "format": "date-time"
+        }
+      },
+      "required": ["name", "userId"]
+    },
+    "Transaction": {
+      "title": "Transaction",
+      "description": "A financial transaction for TPQ",
+      "type": "object",
+      "properties": {
+        "bookId": {
+          "type": "string",
+          "description": "ID of the book this transaction belongs to"
+        },
+        "type": {
+          "type": "string",
+          "enum": ["income", "expense"],
+          "description": "Type of transaction"
+        },
+        "amount": {
+          "type": "number",
+          "description": "Amount in IDR"
+        },
+        "category": {
+          "type": "string",
+          "description": "Category of the transaction"
+        },
+        "description": {
+          "type": "string",
+          "description": "Detailed description"
+        },
+        "date": {
+          "type": "string",
+          "format": "date",
+          "description": "Date of transaction (YYYY-MM-DD)"
+        },
+        "time": {
+          "type": "string",
+          "description": "Time of transaction (HH:mm)"
+        },
+        "userId": {
+          "type": "string",
+          "description": "ID of the user who owns this transaction"
+        },
+        "createdAt": {
+          "type": "string",
+          "format": "date-time",
+          "description": "Server-side timestamp"
+        }
+      },
+      "required": ["bookId", "type", "amount", "category", "description", "date", "time", "userId"]
+    }
+  },
+  "firestore": {
+    "/books/{bookId}": {
+      "schema": "Book",
+      "description": "User ledger books"
+    },
+    "/transactions/{transactionId}": {
+      "schema": "Transaction",
+      "description": "Collection of transactions linked to books"
+    }
+  }
+}
