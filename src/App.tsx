@@ -516,10 +516,22 @@ export default function App() {
   }, [books, selectedBookId]);
 
   const login = async () => {
+    setAuthError(null);
     try {
       await signInWithPopup(auth, googleProvider);
-    } catch (error) {
+    } catch (error: any) {
       console.error("Login failed", error);
+      let message = "Gagal masuk dengan Google. Silakan coba lagi.";
+      
+      if (error.code === 'auth/unauthorized-domain') {
+        message = "Domain ini tidak diizinkan untuk login. Tambahkan domain Vercel Anda di Firebase Console (Authentication > Settings > Authorized domains).";
+      } else if (error.code === 'auth/popup-closed-by-user') {
+        message = "Jendela login ditutup sebelum selesai.";
+      } else if (error.message) {
+        message = `Gagal masuk: ${error.message}`;
+      }
+      
+      setAuthError(message);
     }
   };
 
